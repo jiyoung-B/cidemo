@@ -18,7 +18,8 @@ permissions:
 
 env:
 #  PROJECT_NAME: cidemo
-  RESOURCE_PATH: ./src/main/resources/application.properties
+  S3_BUCKET_NAME: weather-eottae
+#  RESOURCE_PATH: ./src/main/resources/application.properties
   CODE_DEPLOY_APPLICATION_NAME: weather-code-deploy
   CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: weather-server
 
@@ -78,6 +79,14 @@ jobs:
         aws deploy create-deployment \
         --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
         --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+        --ignore-application-stop-failures \
         --file-exists-behavior OVERWRITE \
-        --s3-location bucket=${{ secrets.S3_BUCKET_NAME }},bundleType=zip,key=deploy.zip \
+        --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=deploy.zip \
         --region ap-northeast-2
+#
+#        aws deploy create-deployment \
+#        --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
+#        --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+#        --ignore-application-stop-failures \
+#        --s3-location bundleType=tar,bucket=$S3_BUCKET_NAME,key=deploy.zip \
+#        --region ap-northeast-2
