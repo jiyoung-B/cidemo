@@ -5,7 +5,7 @@
 # This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
 
-name: Java CI with Gradle
+name: Build and Deploy Spring Boot to AWS EC2
 
 on:
   push:
@@ -15,6 +15,12 @@ on:
 
 permissions:
   contents: read
+
+env:
+#  PROJECT_NAME: cidemo
+  RESOURCE_PATH: ./src/main/resources/application.properties
+  CODE_DEPLOY_APPLICATION_NAME: weather-code-deploy
+  CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: weather-server
 
 jobs:
   build:
@@ -29,30 +35,49 @@ jobs:
         java-version: '17'
         distribution: 'corretto'
 
-    - uses: actions/checkout@v3
-    - run: touch ./src/main/resources/application.properties
-    - run: echo "${{ secret.APPLICATION }}" > ./src/main/resources/application.properties
-    - run: cat ./src/main/resources/application.properties
-
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+      shell: bash
     - name: Build with Gradle
       run: ./gradlew clean build -x test
+      shell: bash
+          
+    # 디렉토리 생성
+    - name: Make Directory
+      run: mkdir -p deploy
 
-    - name: Docker build
-      run: |
-        docker login -u ${{ secrets.DOCKER_USERNAME }} -P ${{ secrets.DOCKER_PASSWORD }}
-        docker build -t spring-cicd ${{ secrets.DOCKER_USERNAME }}/spring-cicd:${{ GITHUB_SHA::7 }} .
-        docker push ${{ secrets.DOCKER_USERNAME }}/spring-cicd:${{ GITHUB_SHA::7 }}
+      # Jar 파일 복사
+    - name: Copy Jar
+      run: cp ./build/libs/*.jar ./deploy
 
-    - name: Deploy
+      # appspec.yml 파일 복사
+    - name: Copy appspec.yml
+      run: cp appspec.yml ./deploy
+
+      # script files 복사
+    - name: Copy script
+      run: cp ./scripts/*.sh ./deploy
+
+    - name: Make zip file
+      run: zip -r ./deploy.zip ./deploy
+      shell: bash
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        host: ${{ secrets.HOST }}
-        username: ec2-user
-        key: ${{ secrets.PRIVATE_KEY }}
-        envs: GITHUB_SHA
-        script: | 
-          docker pull vvvv4449/spring-cicd:${GITHUB_SHA::7} 
-          docker tag vvvv4449/spring-cicd:${GITHUB_SHA::7} spring-cicd 
-          docker stop server 
-          docker run -d --rm --name server -p 80:8080 spring-cicd 
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2
+
+    - name: Upload to S3
+      run: aws s3 cp --region ap-northeast-2 ./deploy.zip s3://${{ secrets.S3_BUCKET_NAME }}/deploy.zip
+
+      # Deploy
+    - name: Code Deploy
+      run: |
+        aws deploy create-deployment \
+        --application-name ${{ env.CODE_DEPLOY_APPLICATION_NAME }} \
+        --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
+        --file-exists-behavior OVERWRITE \
+        --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=deploy.zip \
+        --region ap-northeast-2
