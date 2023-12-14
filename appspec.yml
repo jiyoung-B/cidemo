@@ -1,12 +1,12 @@
 version: 0.0
 os: linux
 files:
-  - source:  /
-    destination: /home/ubuntu/app
+  - source: ./scripts
+    destination: /home/ubuntu/app/scripts
     overwrite: yes
 
 permissions:
-  - object: /
+  - object: /home/ubuntu/app
     pattern: "**"
     owner: ubuntu
     group: ubuntu
@@ -14,5 +14,5 @@ permissions:
 hooks:
   ApplicationStart:
     - location: scripts/deploy.sh
-      timeout: 300
+      timeout: 120
       runas: ubuntu
