@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 REPOSITORY=/home/ubuntu/app
+cd $REPOSITORY
 APP_NAME=cidemo
 JAR_NAME=$(ls -t $REPOSITORY/*SNAPSHOT.jar | head -n 1)
 
