@@ -29,13 +29,30 @@ jobs:
         java-version: '17'
         distribution: 'corretto'
 
+    - uses: actions/checkout@v3
+    - run: touch ./src/main/resources/application.properties
+    - run: echo "${{ secret.APPLICATION }}" > ./src/main/resources/application.properties
+    - run: cat ./src/main/resources/application.properties
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-
     - name: Build with Gradle
       run: ./gradlew clean build -x test
 
-#    - name: Build with Gradle
-#      uses: gradle/gradle-build-action@bd5760595778326ba7f1441bcf7e88b49de61a25 # v2.6.0
-#      with:
-#        arguments: build
+    - name: Docker build
+      run: |
+        docker login -u ${{ secrets.DOCKER_USERNAME }} -P ${{ secrets.DOCKER_PASSWORD }}
+        docker build -t spring-cicd ${{ secrets.DOCKER_USERNAME }}/spring-cicd:${{ GITHUB_SHA::7 }} .
+        docker push ${{ secrets.DOCKER_USERNAME }}/spring-cicd:${{ GITHUB_SHA::7 }}
+
+    - name: Deploy
+      with:
+        host: ${{ secrets.HOST }}
+        username: ec2-user
+        key: ${{ secrets.PRIVATE_KEY }}
+        envs: GITHUB_SHA
+        script: | 
+          docker pull vvvv4449/spring-cicd:${GITHUB_SHA::7} 
+          docker tag vvvv4449/spring-cicd:${GITHUB_SHA::7} spring-cicd 
+          docker stop server 
+          docker run -d --rm --name server -p 80:8080 spring-cicd 
