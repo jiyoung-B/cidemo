@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-REPOSITORY=/home/ubuntu/app/cidemo
+REPOSITORY=/home/ubuntu/app
 cd $REPOSITORY
 
 echo "> 현재 구동 중인 애플리케이션 pid 확인"
@@ -24,8 +24,8 @@ else
 fi
 
 echo "> 새 애플리케이션 배포"
-
-JAR_NAME=$(ls -tr $REPOSITORY/build/libs/*SNAPSHOT.jar | tail -n 1)
+JAR_NAME=$(ls -t $REPOSITORY/build/libs/*-SNAPSHOT.jar | head -n 1)
+#JAR_NAME=$(ls -tr $REPOSITORY/build/libs/*-SNAPSHOT.jar | tail -n 1)
 
 echo "> JAR NAME: $JAR_NAME"
 if [ ! -f "$JAR_NAME" ]; then
