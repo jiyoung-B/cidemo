@@ -40,3 +40,6 @@ chmod +x $JAR_NAME
 echo "> $JAR_NAME 실행"
 
 nohup java -jar -Duser.timezone=Asia/Seoul $JAR_NAME >> $REPOSITORY/nohup.out 2>&1 &
+
+echo "배포 스크립트가 성공적으로 완료되었습니다."
+tail -n 30 $REPOSITORY/nohup.out
