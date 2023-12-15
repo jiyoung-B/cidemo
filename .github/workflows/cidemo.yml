@@ -85,7 +85,7 @@ jobs:
         --deployment-group-name ${{ env.CODE_DEPLOY_DEPLOYMENT_GROUP_NAME }} \
         --ignore-application-stop-failures \
         --file-exists-behavior OVERWRITE \
-        --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=deploy.zip \
+        --s3-location bucket=$S3_BUCKET_NAME,bundleType=zip,key=$PROJECT_NAME.zip \
         --region ap-northeast-2
 #
 #        aws deploy create-deployment \
